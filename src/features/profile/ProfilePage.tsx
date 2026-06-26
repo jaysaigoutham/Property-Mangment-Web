@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail, Shield, UserRound } from "lucide-react";
 import { getErrorMessage } from "../../api/errors";
 import { Alert } from "../../components/ui/Alert";
@@ -12,6 +12,7 @@ import { getProfile } from "../auth/api";
 import { useAuth } from "../auth/AuthContext";
 
 export const ProfilePage = () => {
+  const queryClient = useQueryClient();
   const { user, setProfile, signOut } = useAuth();
   const profileQuery = useQuery({
     queryKey: ["profile"],
@@ -34,7 +35,7 @@ export const ProfilePage = () => {
         <h1 className="text-3xl font-bold text-stone-950">Profile</h1>
       </div>
 
-      {profileQuery.isLoading ? <Spinner className="min-h-48 rounded-md border border-stone-200 bg-white" label="Loading profile" /> : null}
+      {profileQuery.isLoading && !profile ? <Spinner className="min-h-48 rounded-md border border-stone-200 bg-white" label="Loading profile" /> : null}
       {profileQuery.isError ? <Alert tone="error" message={getErrorMessage(profileQuery.error)} /> : null}
 
       {profile ? (
@@ -60,12 +61,19 @@ export const ProfilePage = () => {
             ) : null}
           </div>
 
+          {profileQuery.isFetching ? (
+            <div className="mt-5">
+              <Alert tone="info" message="Refreshing profile details..." />
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
               type="button"
               variant="secondary"
               onClick={() => {
                 signOut();
+                queryClient.clear();
                 window.location.assign(routes.home);
               }}
             >

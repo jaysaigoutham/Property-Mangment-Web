@@ -14,6 +14,13 @@ export const formatPrice = (listing: Listing) => {
 
 export const formatLocation = (listing: Listing) => [listing.city, listing.state, listing.country].filter(Boolean).join(", ") || "Location available on request";
 
+export const getLocationParts = (listing: Listing) => [
+  { label: "Address", value: listing.addressLine },
+  { label: "City", value: listing.city },
+  { label: "State", value: listing.state },
+  { label: "Country", value: listing.country },
+];
+
 export const formatPropertyFacts = (listing: Listing) =>
   [
     listing.propertyType,

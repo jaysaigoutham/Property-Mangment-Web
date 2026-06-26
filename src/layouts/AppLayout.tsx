@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Building2, LogOut, Menu } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { appBrand, authenticatedNavigation, publicNavigation } from "../config/navigation";
@@ -8,11 +9,13 @@ import { cn } from "../components/ui/cn";
 
 export const AppLayout = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user, signOut } = useAuth();
   const navigation = isAuthenticated ? authenticatedNavigation : publicNavigation;
 
   const handleLogout = () => {
     signOut();
+    queryClient.clear();
     navigate(routes.home);
   };
 

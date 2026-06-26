@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BedDouble, CheckCircle2, Mail, MapPin, Phone, Ruler, ShowerHead } from "lucide-react";
+import { ArrowLeft, BedDouble, Building, CheckCircle2, Mail, MapPin, Phone, Ruler, ShowerHead } from "lucide-react";
 import { getErrorMessage } from "../../api/errors";
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
@@ -11,7 +11,7 @@ import { routes } from "../../config/routes";
 import { useAuth } from "../auth/AuthContext";
 import { InquiryForm } from "../inquiries/InquiryForm";
 import { getListing, getListingMedia } from "./api";
-import { formatLocation, formatPrice, formatPropertyFacts } from "./formatters";
+import { formatLocation, formatPrice, formatPropertyFacts, getLocationParts } from "./formatters";
 import { ListingGallery } from "./components/ListingGallery";
 
 export const ListingDetailsPage = () => {
@@ -54,6 +54,7 @@ export const ListingDetailsPage = () => {
   }
 
   const facts = formatPropertyFacts(listing);
+  const locationParts = getLocationParts(listing);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8">
@@ -62,7 +63,7 @@ export const ListingDetailsPage = () => {
         Back to listings
       </Link>
 
-      <ListingGallery listing={listing} media={mediaQuery.data ?? []} />
+      <ListingGallery listing={listing} media={mediaQuery.data ?? []} isLoading={mediaQuery.isLoading} hasError={mediaQuery.isError} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <main className="grid gap-6">
@@ -85,6 +86,21 @@ export const ListingDetailsPage = () => {
               <Fact icon={<Ruler className="h-5 w-5" />} label="Area" value={listing.areaSqm ? `${listing.areaSqm} sqm` : "-"} />
               <Fact icon={<CheckCircle2 className="h-5 w-5" />} label="Type" value={listing.propertyType ?? "-"} />
             </div>
+          </section>
+
+          <section className="rounded-md border border-stone-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+              <h2 className="text-xl font-semibold text-stone-950">Location</h2>
+            </div>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+              {locationParts.map((part) => (
+                <div className="rounded-md border border-stone-200 bg-stone-50 p-3" key={part.label}>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">{part.label}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-stone-950">{part.value || "Not provided"}</dd>
+                </div>
+              ))}
+            </dl>
           </section>
 
           <section className="rounded-md border border-stone-200 bg-white p-5 shadow-sm">
@@ -121,21 +137,20 @@ export const ListingDetailsPage = () => {
 
         <aside className="grid h-fit gap-4">
           <section className="rounded-md border border-stone-200 bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-stone-950">Agent information</h2>
+            <div className="flex items-center gap-2">
+              <Building className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-stone-950">Agent information</h2>
+            </div>
             <div className="mt-3 grid gap-2 text-sm text-stone-600">
               <p className="font-semibold text-stone-900">{listing.agentName || "Property agent"}</p>
-              {listing.agentEmail ? (
-                <p className="inline-flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                  {listing.agentEmail}
-                </p>
-              ) : null}
-              {listing.agentPhone ? (
-                <p className="inline-flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                  {listing.agentPhone}
-                </p>
-              ) : null}
+              <p className="inline-flex items-center gap-2">
+                <Mail className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+                {listing.agentEmail || "Email not provided"}
+              </p>
+              <p className="inline-flex items-center gap-2">
+                <Phone className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+                {listing.agentPhone || "Phone not provided"}
+              </p>
             </div>
           </section>
 

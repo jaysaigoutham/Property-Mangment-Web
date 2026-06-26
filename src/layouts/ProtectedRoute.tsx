@@ -2,6 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { routes } from "../config/routes";
 import { useAuth } from "../features/auth/AuthContext";
+import { sanitizeRedirectPath } from "../features/auth/redirects";
 import type { UserRole } from "../types/domain";
 
 interface ProtectedRouteProps {
@@ -14,7 +15,7 @@ export const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
-    const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
+    const redirect = encodeURIComponent(sanitizeRedirectPath(`${location.pathname}${location.search}`));
     return <Navigate to={`${routes.login}?redirect=${redirect}`} replace />;
   }
 

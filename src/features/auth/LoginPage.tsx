@@ -9,6 +9,7 @@ import { routes } from "../../config/routes";
 import { getErrorMessage } from "../../api/errors";
 import { login } from "./api";
 import { useAuth } from "./AuthContext";
+import { sanitizeRedirectPath } from "./redirects";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,20 +20,30 @@ export const LoginPage = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const redirect = new URLSearchParams(location.search).get("redirect") || routes.home;
+  const redirect = sanitizeRedirectPath(new URLSearchParams(location.search).get("redirect"));
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
-    if (!email || !password) {
-      setError("Enter your email and password.");
+    if (!email.trim()) {
+      setError("Enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Enter your password.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const session = await login({ email, password });
+      const session = await login({ email: email.trim(), password });
       signIn(session);
       navigate(redirect, { replace: true });
     } catch (caughtError) {
@@ -64,8 +75,8 @@ export const LoginPage = () => {
         {error ? <Alert tone="error" message={error} className="mb-4" /> : null}
 
         <div className="grid gap-4">
-          <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-          <Input label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
+          <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" disabled={isSubmitting} />
+          <Input label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" disabled={isSubmitting} />
           <Button type="submit" isLoading={isSubmitting}>
             Sign in
           </Button>

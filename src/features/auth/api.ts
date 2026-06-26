@@ -1,15 +1,24 @@
 import { apiEndpoints } from "../../config/api-endpoints";
 import { apiRequest } from "../../api/http-client";
 import { asString } from "../../api/response";
+import { storeSession } from "./auth-storage";
 import type { AuthSession, AuthUser, LoginRequest, RegisterRequest } from "../../types/domain";
 
-const normalizeUser = (payload: unknown): AuthUser | undefined => {
+export const normalizeUser = (payload: unknown): AuthUser | undefined => {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
 
   const record = payload as Record<string, unknown>;
-  const source = (record.user && typeof record.user === "object" ? record.user : record.profile && typeof record.profile === "object" ? record.profile : record) as Record<string, unknown>;
+  const source = (
+    record.user && typeof record.user === "object"
+      ? record.user
+      : record.profile && typeof record.profile === "object"
+        ? record.profile
+        : record.data && typeof record.data === "object"
+          ? record.data
+          : record
+  ) as Record<string, unknown>;
   const email = asString(source.email);
 
   if (!email) {
@@ -31,7 +40,8 @@ const normalizeAuthSession = (payload: unknown): AuthSession => {
   }
 
   const record = payload as Record<string, unknown>;
-  const accessToken = asString(record.accessToken || record.token || record.jwt);
+  const tokenSource = record.auth && typeof record.auth === "object" ? (record.auth as Record<string, unknown>) : record;
+  const accessToken = asString(record.accessToken || record.token || record.jwt || tokenSource.accessToken || tokenSource.token || tokenSource.jwt);
 
   if (!accessToken) {
     throw new Error("Authentication response did not include an access token.");
@@ -39,8 +49,22 @@ const normalizeAuthSession = (payload: unknown): AuthSession => {
 
   return {
     accessToken,
-    refreshToken: asString(record.refreshToken) || undefined,
+    refreshToken: asString(record.refreshToken || tokenSource.refreshToken) || undefined,
     user: normalizeUser(payload),
+  };
+};
+
+const withProfileFallback = async (session: AuthSession) => {
+  if (session.user) {
+    return session;
+  }
+
+  storeSession(session);
+  const user = await getProfile();
+
+  return {
+    ...session,
+    user,
   };
 };
 
@@ -51,7 +75,7 @@ export const login = async (request: LoginRequest) => {
     body: request,
   });
 
-  return normalizeAuthSession(payload);
+  return withProfileFallback(normalizeAuthSession(payload));
 };
 
 export const register = async (request: RegisterRequest) => {
@@ -61,7 +85,7 @@ export const register = async (request: RegisterRequest) => {
     body: request,
   });
 
-  return normalizeAuthSession(payload);
+  return withProfileFallback(normalizeAuthSession(payload));
 };
 
 export const getProfile = async () => {

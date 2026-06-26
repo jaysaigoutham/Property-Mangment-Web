@@ -24,14 +24,29 @@ export const RegisterPage = () => {
     event.preventDefault();
     setError("");
 
-    if (!displayName || !email || !password) {
-      setError("Complete all required fields.");
+    if (!displayName.trim()) {
+      setError("Enter your display name.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Enter a password.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const session = await register({ displayName, email, password, role });
+      const session = await register({ displayName: displayName.trim(), email: email.trim(), password, role });
       signIn(session);
       navigate(routes.profile, { replace: true });
     } catch (caughtError) {
@@ -55,13 +70,14 @@ export const RegisterPage = () => {
         {error ? <Alert tone="error" message={error} className="mb-4" /> : null}
 
         <div className="grid gap-4">
-          <Input label="Display name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" />
-          <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-          <Input label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
+          <Input label="Display name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" disabled={isSubmitting} />
+          <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" disabled={isSubmitting} />
+          <Input label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" disabled={isSubmitting} />
           <Select
             label="Account type"
             value={role}
             onChange={(event) => setRole(event.target.value as "buyer" | "agent")}
+            disabled={isSubmitting}
             options={[
               { label: "Buyer", value: "buyer" },
               { label: "Agent", value: "agent" },

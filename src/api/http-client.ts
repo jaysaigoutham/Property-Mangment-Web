@@ -1,6 +1,8 @@
 import { env } from "../config/env";
 import { authConfig } from "../config/auth";
+import { routes } from "../config/routes";
 import { getStoredToken, clearStoredSession } from "../features/auth/auth-storage";
+import { sanitizeRedirectPath } from "../features/auth/redirects";
 import { ApiError, extractBackendMessage } from "./errors";
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
@@ -31,8 +33,14 @@ const redirectToLogin = () => {
     return;
   }
 
-  const redirect = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+  const redirect = encodeURIComponent(sanitizeRedirectPath(`${window.location.pathname}${window.location.search}`));
   window.location.assign(`${authConfig.loginRedirectPath}?redirect=${redirect}`);
+};
+
+const redirectToNotAuthorized = () => {
+  if (window.location.pathname !== routes.notAuthorized) {
+    window.location.assign(routes.notAuthorized);
+  }
 };
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -62,6 +70,10 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   if (response.status === 401) {
     clearStoredSession();
     redirectToLogin();
+  }
+
+  if (response.status === 403 && auth) {
+    redirectToNotAuthorized();
   }
 
   if (!response.ok) {
